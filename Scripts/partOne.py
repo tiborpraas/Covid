@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt  # ✅ Import this line
 import datetime
 
 # Load the dataset
-df = pd.read_csv("project/Covid/day_wise.csv")
+df = pd.read_csv("Data\day_wise.csv")
 
 # Convert 'Date' column to datetime format
 df["Date"] = pd.to_datetime(df["Date"])
