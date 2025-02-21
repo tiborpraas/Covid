@@ -2,7 +2,7 @@ import sqlite3
 
 # Stap 1: Maak verbinding met de database
 # Vervang 'covid_database.db' door het pad naar je databasebestand
-connection = sqlite3.connect("project/Covid/covid_database.db")
+connection = sqlite3.connect("Data/covid_database.db")
 
 # Stap 2: Maak een cursor-object om SQL-query's uit te voeren
 cursor = connection.cursor()
