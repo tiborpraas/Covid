@@ -12,20 +12,31 @@ COVID/
 │ ├── day_wise.csv
 │
 ├── Scripts/ (Bevat Python-scripts)
-│ ├── partA.py
+│ ├── partOne.py
 │ ├── query_database.py
 │
 ├── README.md
 ├── requirements.txt # Vereiste Python-pakketten
 
-## Inhoudsopgave
-1. [Beschrijving](#beschrijving)
+## Table of conetnts
+1. [Description](#beschrijving)
 2. [Datasets](#datasets)
-3. [Installatie](#installatie)
-4. [Gebruik](#gebruik)
-5. [Resultaten](#resultaten)
+3. [Installation](#installatie)
+4. [Usage](#gebruik)
+5. [Part One](#PartOne)
+5. [Results](#resultaten)
 6. [Bijdragen](#bijdragen)
 7. [Licentie](#licentie)
+
+
+#PartOne
+
+SIR model parameter findings:
+Estimated beta: 0.3
+Estimated gamma: 0.1
+Estimated R0: 2.99
+
+
 
 
 
