@@ -23,13 +23,16 @@ COVID/
 2. [Datasets](#datasets)
 3. [Installation](#installatie)
 4. [Usage](#gebruik)
-5. [Part One](#PartOne)
+5. [Part One](#part-one)
 5. [Results](#resultaten)
 6. [Bijdragen](#bijdragen)
 7. [Licentie](#licentie)
 
 
-#PartOne
+# Part One
+
+![Time](graph.png)
+
 
 SIR model parameter findings:
 Estimated beta: 0.3
