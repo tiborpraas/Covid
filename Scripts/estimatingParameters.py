@@ -147,4 +147,3 @@ def Produce_reproduction_number_trajectory(country, length):
     return
 
 Produce_reproduction_number_trajectory('France', 1000)
-
