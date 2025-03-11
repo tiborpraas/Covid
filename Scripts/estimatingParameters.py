@@ -3,39 +3,6 @@ from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import numpy as np
 
-# # Stap 1: Maak verbinding met de database
-# # Vervang 'covid_database.db' door het pad naar je databasebestand
-# connection = sqlite3.connect("Data/covid_database.db")
-
-# # Stap 2: Maak een cursor-object om SQL-query's uit te voeren
-# cursor = connection.cursor()
-
-# # Stap 3: Schrijf en voer een SQL-query uit
-# # Voorbeeld: Selecteer de eerste 10 rijen uit een tabel genaamd 'cases'
-# # query = "SELECT * FROM worldometer_data LIMIT 10;"
-
-# # Voorbeeld selecteer de column titel van dataset country_wise
-# # query = "PRAGMA table_info(country_wise);"
-
-# # Voorbeeld selecteer de column titel van dataset worldometer_data
-# # query = "PRAGMA table_info(worldometer_data);"
-
-# # Pak data van Afghanistan
-# # query = "SELECT * FROM country_wise WHERE [Country.Region] = 'Afghanistan';"
-# query = "SELECT * FROM worldometer_data WHERE [Country.Region] = 'Afghanistan';"
-
-# cursor.execute(query)
-
-# # Stap 4: Haal de resultaten op
-# results = cursor.fetchall()
-
-# # Stap 5: Print de resultaten
-# for row in results:
-#     print(row)
-
-# # Stap 6: Sluit de verbinding
-# connection.close()
-
 def obtain_mu_hat(country):
     connection = sqlite3.connect("Data/covid_database.db")
     cursor = connection.cursor()
@@ -170,7 +137,6 @@ def Produce_reproduction_number_trajectory(country, length):
 
     plt.xlabel("Days passed")
     plt.ylabel("Reproduction number")
-    # plt.ylim(0, max(Reproduction_number) * 1.1)
     plt.title(f"Reproduction number over time of {country}")
     plt.xticks(tick_positions, rotation=45)
     plt.grid(True)
@@ -182,6 +148,3 @@ def Produce_reproduction_number_trajectory(country, length):
 
 Produce_reproduction_number_trajectory('France', 1000)
 
-# print(obtain_mu_hat('France'))
-# print(obtain_alpha_hat('France'))
-# print(obtain_beta_hat('France'))
