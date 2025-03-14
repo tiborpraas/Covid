@@ -31,7 +31,7 @@ df_final["New_recovered"] = df_final["Recovered_csv"].diff().fillna(0)
 df_final["New_cases"] = df_final["Confirmed_csv"].diff().fillna(0)
 
 df_final["mu"] = df_final["New_deaths"] / df_final["Confirmed_csv"]
-df_final["gamma"] = 1 / 4.5  # Fixed based on assignment
+df_final["gamma"] = 1 / 4.5
 
 df_final["beta"] = (df_final["New_cases"] / (df_final["Confirmed_csv"] * df_final["Population"])) * df_final["Population"]
 
