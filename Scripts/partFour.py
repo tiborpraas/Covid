@@ -6,11 +6,11 @@ import sqlite3
 import plotly.express as px
 
 # Connect to the database
-db_file_path = "covid_database.db"
+db_file_path = "Data/covid_database.db"
 conn = sqlite3.connect(db_file_path)
 
 # Load necessary tables using SQL queries for efficiency
-df_csv = pd.read_csv("complete.csv")
+df_csv = pd.read_csv("Data/complete.csv")
 df_country_wise = pd.read_sql_query("SELECT `Country.Region`, Confirmed, Deaths, Recovered, Active FROM country_wise", conn)
 df_worldometer = pd.read_sql_query("SELECT `Country.Region`, Population FROM worldometer_data", conn)
 df_usa_counties = pd.read_sql_query("SELECT Admin2, Province_State, Confirmed, Deaths FROM usa_county_wise", conn)
@@ -31,12 +31,12 @@ df_final["New_recovered"] = df_final["Recovered_csv"].diff().fillna(0)
 df_final["New_cases"] = df_final["Confirmed_csv"].diff().fillna(0)
 
 df_final["mu"] = df_final["New_deaths"] / df_final["Confirmed_csv"]
-df_final["gamma"] = 1 / 4.5
+df_final["gamma"] = 1 / 4.5  # Fixed based on assignment
 
 df_final["beta"] = (df_final["New_cases"] / (df_final["Confirmed_csv"] * df_final["Population"])) * df_final["Population"]
 
-df_final["mu"].fillna(method="ffill", inplace=True)
-df_final["beta"].fillna(method="ffill", inplace=True)
+df_final["mu"] = df_final["mu"].ffill()
+df_final["beta"] = df_final["beta"].ffill()
 
 df_final["R0"] = df_final["beta"] / df_final["gamma"]
 
@@ -66,14 +66,92 @@ fig = px.choropleth(df_europe,
 fig.show()
 
 # Identify top 5 US counties with highest deaths and cases
-df_usa_sorted_cases = df_usa_counties.sort_values(by="Confirmed", ascending=False).head(5)
-df_usa_sorted_deaths = df_usa_counties.sort_values(by="Deaths", ascending=False).head(5)
+df_usa_sorted_cases = df_usa_counties.nlargest(5, "Confirmed")
+df_usa_sorted_deaths = df_usa_counties.nlargest(5, "Deaths")
 
 # Plot top 5 counties
 def plot_top_us_counties():
+    plot_time_series()
+    plot_continent_death_rates()
+    plot_reproduction_number()
+    plot_sird_model()
+    plot_time_series()
+    plot_continent_death_rates()
+    plot_reproduction_number()
+    plot_sird_model()
+    plot_time_series()
+    plot_continent_death_rates()
+    plot_reproduction_number()
+    plot_sird_model()
+
+# Define missing functions
+
+def plot_time_series():
+    df_time_series = df_final.groupby("Date")[["Confirmed_csv", "Deaths_csv", "Recovered_csv", "Active_csv"]].sum()
     plt.figure(figsize=(12, 6))
-    plt.bar(df_usa_sorted_cases["Admin2"], df_usa_sorted_cases["Confirmed"], color="blue", label="Cases")
-    plt.bar(df_usa_sorted_deaths["Admin2"], df_usa_sorted_deaths["Deaths"], color="red", label="Deaths")
+    plt.plot(df_time_series.index, df_time_series["Confirmed_csv"], label="Confirmed Cases", linestyle="-")
+    plt.plot(df_time_series.index, df_time_series["Deaths_csv"], label="Deaths", linestyle="--", color="red")
+    plt.plot(df_time_series.index, df_time_series["Recovered_csv"], label="Recovered", linestyle=":", color="green")
+    plt.plot(df_time_series.index, df_time_series["Active_csv"], label="Active Cases", linestyle="-.", color="blue")
+    plt.xlabel("Date")
+    plt.ylabel("Count")
+    plt.title("COVID-19 Trends Over Time")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+def plot_continent_death_rates():
+    df_continent_deaths = pd.read_sql_query(
+        "SELECT Continent, SUM(TotalDeaths) as Total_Deaths FROM worldometer_data GROUP BY Continent", conn
+    )
+    plt.figure(figsize=(10, 6))
+    plt.bar(df_continent_deaths["Continent"], df_continent_deaths["Total_Deaths"], color="red")
+    plt.xlabel("Continent")
+    plt.ylabel("Total Deaths")
+    plt.title("COVID-19 Deaths Across Continents")
+    plt.xticks(rotation=45)
+    plt.grid(axis="y")
+    plt.show()
+
+def plot_reproduction_number():
+    plt.figure(figsize=(12, 6))
+    plt.plot(df_final["Date"], df_final["R0"], label="R0 (Basic Reproduction Number)", color="purple")
+    plt.xlabel("Date")
+    plt.ylabel("R0 Value")
+    plt.title("Estimated R0 Over Time")
+    plt.axhline(y=1, color="r", linestyle="--", label="Threshold (R0 = 1)")
+    plt.legend()
+    plt.xticks(rotation=45)
+    plt.grid()
+    plt.show()
+
+def plot_sird_model():
+    t_span = (0, 180)
+    t_eval = np.linspace(t_span[0], t_span[1], 180)
+    solution = solve_ivp(SIRD_model, t_span, [S0, I0, R0, D0], args=(alpha, beta, gamma, mu, N), t_eval=t_eval)
+    plt.figure(figsize=(12, 6))
+    plt.plot(t_eval, solution.y[0], label="Susceptible (S)", linestyle="--", color="blue")
+    plt.plot(t_eval, solution.y[1], label="Infected (I)", linestyle="-", color="red")
+    plt.plot(t_eval, solution.y[2], label="Recovered (R)", linestyle=":", color="green")
+    plt.plot(t_eval, solution.y[3], label="Deceased (D)", linestyle="-.", color="black")
+    plt.xlabel("Days")
+    plt.ylabel("Population")
+    plt.title("SIRD Model Simulation Over 180 Days")
+    plt.legend()
+    plt.grid()
+    plt.show()
+    plot_time_series()
+    plot_continent_death_rates()
+    plot_reproduction_number()
+    plot_sird_model()
+    plt.figure(figsize=(12, 6))
+    top_cases = df_usa_counties.nlargest(5, "Confirmed")
+    top_deaths = df_usa_counties.nlargest(5, "Deaths")
+    counties = top_cases["Admin2"]  # Get county names
+
+    plt.bar(counties, top_cases["Confirmed"], color="blue", label="Cases")
+    plt.bar(counties, top_deaths["Deaths"], color="red", label="Deaths")
     plt.xlabel("County")
     plt.ylabel("Count")
     plt.title("Top 5 US Counties with Most COVID-19 Cases and Deaths")
