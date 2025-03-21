@@ -11,7 +11,12 @@ def createDataFrameOverTime(continent=None, country=None, province=None, startda
 
     complete_df = pd.read_csv("Data/complete.csv", parse_dates=["Date"])
     complete_df[["Confirmed", "Deaths", "Recovered", "Active"]] = complete_df[["Confirmed", "Deaths", "Recovered", "Active"]].fillna(0)
+    
+    # Keep only 1 row from rows that have the same WHO.Region, Country.Region, Province.State and Date as another
+    complete_df.drop_duplicates(["WHO.Region", "Country.Region", "Province.State", "Date"], inplace=True)
 
+    # Adds the complete.csv as a new table to the sql database with all duplicates
+    complete_df.to_sql("complete_data", connection, if_exists="replace", index=False)
 
     cursor = connection.cursor()
 
@@ -43,8 +48,6 @@ def createDataFrameOverTime(continent=None, country=None, province=None, startda
     
     return None
 
-df = createDataFrameOverTime(continent="Western Pacific", country="China", province=None, startdate="2020-03-01")
-
 def calculateReproductionNumberForDataFrame(df):
     # Estimator with the value given in the assignment
     gamma = 1 / 4.5
@@ -69,8 +72,6 @@ def dataFrameToCasesPerMillion(df):
     df["Total_Active_Cases"] = df["Total_Active_Cases"] * million / df["Population"]
 
     return df
-
-print(dataFrameToCasesPerMillion(df))
 
 
 
