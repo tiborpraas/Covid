@@ -7,13 +7,13 @@ import plotly.express as px
 
 # Connect to the database
 db_file_path = "Data/covid_database.db"
-conn = sqlite3.connect(db_file_path)
+connection = sqlite3.connect(db_file_path)
 
 # Load necessary tables using SQL queries for efficiency
 df_csv = pd.read_csv("Data/complete.csv")
-df_country_wise = pd.read_sql_query("SELECT `Country.Region`, Confirmed, Deaths, Recovered, Active FROM country_wise", conn)
-df_worldometer = pd.read_sql_query("SELECT `Country.Region`, Population FROM worldometer_data", conn)
-df_usa_counties = pd.read_sql_query("SELECT Admin2, Province_State, Confirmed, Deaths FROM usa_county_wise", conn)
+df_country_wise = pd.read_sql_query("SELECT `Country.Region`, Confirmed, Deaths, Recovered, Active FROM country_wise", connection)
+df_worldometer = pd.read_sql_query("SELECT `Country.Region`, Population FROM worldometer_data", connection)
+df_usa_counties = pd.read_sql_query("SELECT Admin2, Province_State, Confirmed, Deaths FROM usa_county_wise", connection)
 
 # Merge data
 df_merged = pd.merge(df_csv, df_country_wise, on='Country.Region', how='left', suffixes=('_csv', '_db'))
@@ -33,12 +33,14 @@ df_final["New_cases"] = df_final["Confirmed_csv"].diff().fillna(0)
 df_final["mu"] = df_final["New_deaths"] / df_final["Confirmed_csv"]
 df_final["gamma"] = 1 / 4.5  # Fixed based on assignment
 
-df_final["beta"] = (df_final["New_cases"] / (df_final["Confirmed_csv"] * df_final["Population"])) * df_final["Population"]
+df_final["beta"] = df_final["New_cases"].clip(lower=0) / (df_final["Confirmed_csv"] * df_final["Population"]) * df_final["Population"]
 
 df_final["mu"] = df_final["mu"].ffill()
 df_final["beta"] = df_final["beta"].ffill()
 
-df_final["R0"] = df_final["beta"] / df_final["gamma"]
+df_final["gamma"] = 1 / 4.5  # Given in assignment (fixed)
+
+df_final["R0"] = (df_final["beta"] / df_final["gamma"]).clip(lower=0)
 
 # Function to get R0 for a given country
 def get_R0_trajectory(country):
@@ -66,8 +68,11 @@ fig = px.choropleth(df_europe,
 fig.show()
 
 # Identify top 5 US counties with highest deaths and cases
-df_usa_sorted_cases = df_usa_counties.nlargest(5, "Confirmed")
-df_usa_sorted_deaths = df_usa_counties.nlargest(5, "Deaths")
+df_top_cases = df_usa_counties.groupby("Admin2").agg({"Confirmed": "sum"}).reset_index()
+df_top_cases = df_top_cases.nlargest(5, "Confirmed")
+
+df_top_deaths = df_usa_counties.groupby("Admin2").agg({"Deaths": "sum"}).reset_index()
+df_top_deaths = df_top_deaths.nlargest(5, "Deaths")
 
 # Plot top 5 counties
 def plot_top_us_counties():
@@ -103,7 +108,7 @@ def plot_time_series():
 
 def plot_continent_death_rates():
     df_continent_deaths = pd.read_sql_query(
-        "SELECT Continent, SUM(TotalDeaths) as Total_Deaths FROM worldometer_data GROUP BY Continent", conn
+        "SELECT Continent, SUM(TotalDeaths) as Total_Deaths FROM worldometer_data GROUP BY Continent", connection
     )
     plt.figure(figsize=(10, 6))
     plt.bar(df_continent_deaths["Continent"], df_continent_deaths["Total_Deaths"], color="red")
@@ -113,6 +118,8 @@ def plot_continent_death_rates():
     plt.xticks(rotation=45)
     plt.grid(axis="y")
     plt.show()
+
+df_final["R0"] = df_final["R0"].rolling(window=7, min_periods=1).mean()
 
 def plot_reproduction_number():
     plt.figure(figsize=(12, 6))
@@ -148,7 +155,7 @@ def plot_sird_model():
     plt.figure(figsize=(12, 6))
     top_cases = df_usa_counties.nlargest(5, "Confirmed")
     top_deaths = df_usa_counties.nlargest(5, "Deaths")
-    counties = top_cases["Admin2"]  # Get county names
+    counties = top_cases["Admin2"]
 
     plt.bar(counties, top_cases["Confirmed"], color="blue", label="Cases")
     plt.bar(counties, top_deaths["Deaths"], color="red", label="Deaths")
