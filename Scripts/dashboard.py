@@ -10,12 +10,12 @@ import plotly.express as px
 @st.cache_data
 def load_data():
     # Load day-wise data
-    df_day = pd.read_csv("Data/day_wise.csv")
+    df_day = pd.read_csv("../Data/day_wise.csv")
     df_day["Date"] = pd.to_datetime(df_day["Date"])
     df_day["Date"] = df_day["Date"].astype(str)  # Convert Date to string
 
     # Load country-wise data
-    conn = sqlite3.connect("Data/covid_database.db")
+    conn = sqlite3.connect("../Data/covid_database.db")
     df_country = pd.read_sql_query("SELECT * FROM country_wise", conn)
     df_worldometer = pd.read_sql_query("SELECT * FROM worldometer_data", conn)
     df_usa_counties = pd.read_sql_query("SELECT * FROM usa_county_wise", conn)
@@ -190,8 +190,11 @@ with tab4:
 # Top US Counties Tab
 with tab5:
     st.header("Top 5 US Counties with Most Cases and Deaths")
-    top_cases = df_usa_counties.nlargest(5, "Confirmed")
-    top_deaths = df_usa_counties.nlargest(5, "Deaths")
+    top_cases = df_usa_counties.groupby(["Admin2", "Province_State"], as_index=False)["Confirmed"].sum()
+    top_cases = top_cases.nlargest(5, "Confirmed")
+
+    top_deaths = df_usa_counties.groupby(["Admin2", "Province_State"], as_index=False)["Deaths"].sum()
+    top_deaths = top_deaths.nlargest(5, "Deaths")
 
     st.write("### Top 5 Counties by Confirmed Cases")
     st.write(top_cases)
