@@ -1,0 +1,7 @@
+streamlit
+pandas
+numpy
+matplotlib
+scipy
+plotly
+pip>=25.0.1
