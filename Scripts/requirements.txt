@@ -5,3 +5,4 @@ matplotlib
 scipy
 plotly
 sqlite3
+pip>=25.0.1
