@@ -12,7 +12,7 @@ from partFour import plot_visualization_map_WHO_Region
 # Load data
 @st.cache_data
 def load_data():
-    df_complete = pd.read_csv("../Data/complete.csv", parse_dates=["Date"])
+    df_complete = pd.read_csv("Data/complete.csv", parse_dates=["Date"])
     df_complete[["Confirmed", "Deaths", "Recovered", "Active"]] = df_complete[["Confirmed", "Deaths", "Recovered", "Active"]].fillna(0)
     
     # Keep only 1 row from rows that have the same WHO.Region, Country.Region, Province.State and Date as another
