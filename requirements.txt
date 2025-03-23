@@ -3,5 +3,5 @@ pandas
 numpy
 matplotlib
 scipy
-plotly=
+plotly
 pip>=25.0.1
