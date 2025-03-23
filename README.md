@@ -23,13 +23,14 @@ COVID/
 ├── README.md
 ├── requirements.txt # Vereiste Python-pakketten
 
-## Table of conetnts
-1. [HowtoRuntheDashboard]
-2. [DashboardWalkthrough]
-3. [TechnologiesUsed]
-4. [DataSources]
-5. [Notes]
-5. [Contact]
+## Table of contents
+1. [How to Run the Dashboard](#how-to-run-the-dashboard)
+2. [Dashboard Walkthrough](#dashboard-walkthrough)
+3. [Technologies Used](#technologies-used)
+4. [Data Sources](#data-sources)
+5. [Notes](#notes)
+6. [Contact](#contact)
+
 
 ## How to Run the Dashboard
 
@@ -105,16 +106,21 @@ All code and analyses are educational and exploratory in nature.
 ## Contact
 
 Yasha Maas
+
 Email: y.l.maas@student.vu.nl
 
 Thomas van Leeuwen
+
 Email: t.c.van.leeuwen@student.vu.nl
 
 Pelle Hulshof
+
 Email: p.m.c.hulshof@student.vu.nl
 
 Tibor Praas
+
 Email: t.j.praas@student.vu.nl
+
 
 Project Link: https://github.com/tiborpraas/Covid
 
