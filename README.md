@@ -123,5 +123,3 @@ Email: t.j.praas@student.vu.nl
 
 
 Project Link: https://github.com/tiborpraas/Covid
-
-
