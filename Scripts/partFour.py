@@ -68,7 +68,12 @@ def plot_visualization_map_WHO_Region(continent):
                         color_continuous_scale="Reds")
     return fig
 
+# Identify top 5 US counties with highest deaths and cases
+df_top_cases = df_usa_counties.groupby("Admin2").agg({"Confirmed": "sum"}).reset_index()
+df_top_cases = df_top_cases.nlargest(5, "Confirmed")
 
+df_top_deaths = df_usa_counties.groupby("Admin2").agg({"Deaths": "sum"}).reset_index()
+df_top_deaths = df_top_deaths.nlargest(5, "Deaths")
 
 # Plot top 5 counties
 def plot_top_us_counties():

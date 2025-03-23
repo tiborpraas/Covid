@@ -12,7 +12,7 @@ from partFour import plot_visualization_map_WHO_Region
 # Load data
 @st.cache_data
 def load_data():
-    df_complete = pd.read_csv("Data/complete.csv", parse_dates=["Date"])
+    df_complete = pd.read_csv("../Data/complete.csv", parse_dates=["Date"])
     df_complete[["Confirmed", "Deaths", "Recovered", "Active"]] = df_complete[["Confirmed", "Deaths", "Recovered", "Active"]].fillna(0)
     
     # Keep only 1 row from rows that have the same WHO.Region, Country.Region, Province.State and Date as another
@@ -21,11 +21,20 @@ def load_data():
     
 
     # Load day-wise data
-    df_day = pd.read_csv("../Data/day_wise.csv")
+    df_day = pd.read_csv("Data/day_wise.csv")
     df_day["Date"] = pd.to_datetime(df_day["Date"])
     df_day["Date"] = df_day["Date"].astype(str)  # Convert Date to string
 
     # Load country-wise data
+    connection = sqlite3.connect("Data/covid_database.db")
+    df_country = pd.read_sql_query("SELECT * FROM country_wise", connection)
+    df_worldometer = pd.read_sql_query("SELECT * FROM worldometer_data", connection)
+    df_usa_counties = pd.read_sql_query("SELECT * FROM usa_county_wise", connection)
+
+    # Adds the complete.csv as a new table to the sql database without duplicates
+    df_complete.to_sql("complete_data", connection, if_exists="replace", index=False)
+
+    connection.close()
 
     return df_day, df_country, df_worldometer, df_usa_counties, df_complete
 
