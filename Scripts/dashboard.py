@@ -4,26 +4,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sqlite3
 from scipy.optimize import minimize
+import matplotlib.dates as mdates
 import plotly.express as px
+import createDataFrame
+from partFour import plot_visualization_map_WHO_Region
 
 # Load data
 @st.cache_data
 def load_data():
+    df_complete = pd.read_csv("Data/complete.csv", parse_dates=["Date"])
+    df_complete[["Confirmed", "Deaths", "Recovered", "Active"]] = df_complete[["Confirmed", "Deaths", "Recovered", "Active"]].fillna(0)
+    
+    # Keep only 1 row from rows that have the same WHO.Region, Country.Region, Province.State and Date as another
+    df_complete.drop_duplicates(["WHO.Region", "Country.Region", "Province.State", "Date"], inplace=True)
+
+    
+
     # Load day-wise data
     df_day = pd.read_csv("../Data/day_wise.csv")
     df_day["Date"] = pd.to_datetime(df_day["Date"])
     df_day["Date"] = df_day["Date"].astype(str)  # Convert Date to string
 
     # Load country-wise data
-    conn = sqlite3.connect("../Data/covid_database.db")
-    df_country = pd.read_sql_query("SELECT * FROM country_wise", conn)
-    df_worldometer = pd.read_sql_query("SELECT * FROM worldometer_data", conn)
-    df_usa_counties = pd.read_sql_query("SELECT * FROM usa_county_wise", conn)
-    conn.close()
 
-    return df_day, df_country, df_worldometer, df_usa_counties
+    return df_day, df_country, df_worldometer, df_usa_counties, df_complete
 
-df_day, df_country, df_worldometer, df_usa_counties = load_data()
+df_day, df_country, df_worldometer, df_usa_counties, df_complete = load_data()
 
 # Title and description
 st.title("COVID-19 Dashboard")
@@ -34,8 +40,22 @@ with st.sidebar:
     st.header("Filters")
     start_date = st.date_input("Start Date", pd.to_datetime(df_day["Date"].min()))
     end_date = st.date_input("End Date", pd.to_datetime(df_day["Date"].max()))
-    selected_country = st.selectbox("Select Country", df_country["Country.Region"].unique())
-    selected_continent = st.selectbox("Select Continent", df_worldometer["Continent"].unique())
+    selected_continent = st.sidebar.selectbox("Select Continent", [""] + list(df_complete["WHO.Region"].unique()), index=0)
+    filtered_countries = df_complete[df_complete["WHO.Region"] == selected_continent]["Country.Region"].unique()
+
+    selected_country = st.sidebar.selectbox("Select Country", [""] + list(filtered_countries))
+    filtered_provinces = df_complete[df_complete["Country.Region"] == selected_country]["Province.State"].unique()
+
+    if len(filtered_provinces) > 0:
+        # Province Selection
+        selected_province = st.sidebar.selectbox("Select Province", [""] + filtered_provinces)
+    elif selected_country:
+        st.write(f"No provinces available for {selected_country}")
+        selected_province = None
+    else: 
+        st.write(f"No provinces available")
+        selected_province = None
+    
 
 # Convert dates to datetime
 start_date = pd.to_datetime(start_date)
@@ -45,7 +65,7 @@ end_date = pd.to_datetime(end_date)
 filtered_df = df_day[(pd.to_datetime(df_day["Date"]) >= start_date) & (pd.to_datetime(df_day["Date"]) <= end_date)]
 
 # Organize dashboard into tabs
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(["General Results", "SIR Model", "Country-Specific Data", "Continent-Specific Data", "Top US Counties", "Case Fatality Rate"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["General Results", "SIR Model", "Data by location", "Top US Counties", "Case Fatality Rate"])
 
 # General Results Tab
 with tab1:
@@ -83,11 +103,37 @@ with tab1:
 
     # Continent-wise comparison
     st.write("#### COVID-19 Evolution Across Continents")
-    continent_data = df_worldometer.groupby("Continent")[["TotalCases", "TotalDeaths", "TotalRecovered"]].sum().reset_index()
-    fig4 = px.bar(continent_data, x="Continent", y=["TotalCases", "TotalDeaths", "TotalRecovered"], 
+    continent_data = df_worldometer.groupby("Continent")[["TotalCases", "TotalDeaths", "TotalRecovered", "Population"]].sum().reset_index()
+
+    million = 1000000
+    continent_data["Cases_per_million"] = continent_data["TotalCases"] * million / continent_data["Population"]
+    continent_data["Deaths_per_million"] = continent_data["TotalDeaths"] * million / continent_data["Population"]
+    continent_data["Recovered_per_million"] = continent_data["TotalRecovered"] * million / continent_data["Population"]
+
+    show_cases_per_million = st.checkbox("Display cases per million")
+
+    if show_cases_per_million:
+        # Plot the scaled data
+        fig4 = px.bar(continent_data, 
+                    x="Continent", 
+                    y=["Cases_per_million", "Recovered_per_million", "Deaths_per_million"], 
+                    title="Total Cases, Deaths, and Recovered per Population by Continent", 
+                    barmode="group")
+
+        st.plotly_chart(fig4)
+    else:
+        # Normal values, not scaled data
+        fig4 = px.bar(continent_data, x="Continent", y=["TotalCases", "TotalRecovered", "TotalDeaths"], 
                  title="Total Cases, Deaths, and Recovered by Continent", barmode="group")
     st.plotly_chart(fig4)
+    
 
+    if selected_continent:
+        st.write(f"#### Active cases across {selected_continent}")
+        fig5 = plot_visualization_map_WHO_Region(selected_continent)
+        st.plotly_chart(fig5)
+    else:
+        st.write(f"#### In order to display cases across a region, please select one")
 
 # SIR Model Tab
 with tab2:
@@ -172,23 +218,96 @@ with tab2:
 # Country-Specific Data Tab
 with tab3:
     st.header("Country-Specific Statistics")
-    st.write(f"### COVID-19 Data for {selected_country}")
+
+    if selected_province:
+        st.write(f"#### COVID-19 Data for {selected_province}")
+    elif selected_country:
+        st.write(f"#### COVID-19 Data for {selected_country}")
+    elif selected_continent:
+        st.write(f"#### COVID-19 Data for {selected_continent}")
+    else:
+        st.write("### Global COVID-19 Data")
+
+    df = createDataFrame.createDataFrameOverTime(selected_continent, selected_country, selected_province, start_date, end_date)
+    df["Date"] = pd.to_datetime(df["Date"])
+    df["Mortality Rate (%)"] = df["Total_Deaths"] * 100 / df["Total_Confirmed_Cases"]
 
     # Filter data for selected country
-    country_data = df_country[df_country["Country.Region"] == selected_country]
-    st.write(country_data)
+    max_value = df["Total_Confirmed_Cases"].max()
+    df_data = df[df["Total_Confirmed_Cases"] == max_value]
+    # df_data["Date"]
 
-# Continent-Specific Data Tab
-with tab4:
-    st.header("Continent-Specific Statistics")
-    st.write(f"### COVID-19 Data for {selected_continent}")
+    st.write(df_data)
 
-    # Filter data for selected continent
-    continent_data = df_worldometer[df_worldometer["Continent"] == selected_continent]
-    st.write(continent_data)
+    if not selected_province:
+        show_per_million = st.checkbox("Show cases per million")
+    else:
+        show_per_million = False # No data available if province is selected so option should not be available
+
+    if show_per_million:
+        if selected_country:
+            st.write(f"#### COVID-19 over time for {selected_country} in cases per million")
+        elif selected_continent:
+            st.write(f"#### COVID-19 over time for {selected_continent} in cases per million")
+        else:
+            st.write("#### Global COVID-19 spread over time in cases per million")
+
+        df_population = createDataFrame.dataFrameToCasesPerMillion(df)
+        fig1, ax1 = plt.subplots(figsize=((10,6)))
+        ax1.plot(df_population["Date"], df_population["Total_Active_Cases"], label="Active Cases", color="blue")
+        ax1.plot(df_population["Date"], df_population["Total_Recovered"], label="Recovered", color="green")
+        ax1.plot(df_population["Date"], df_population["Total_Deaths"], label="Deaths", color="red")
+
+        ax1.set_xlabel("Date")
+        ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+        ax1.set_ylabel("Cases")
+        ax1.legend()
+        st.pyplot(fig1) # Plot selected country, continent or global for cases per million
+    else:
+        if selected_province:
+            st.write(f"#### Covid-19 over time for {selected_province}")
+        elif selected_country:
+            st.write(f"#### Covid-19 over time for {selected_country}")
+        elif selected_continent:
+            st.write(f"#### Covid-19 over time for {selected_continent}")
+        else:
+            st.write("#### Global COVID-19 spread over time")
+    
+        fig2, ax2 = plt.subplots(figsize=(10,6))
+        ax2.plot(df["Date"], df["Total_Active_Cases"], label="Active Cases", color="blue")
+        ax2.plot(df["Date"], df["Total_Recovered"], label="Recovered", color="green")
+        ax2.plot(df["Date"], df["Total_Deaths"], label="Deaths", color="red")
+
+        ax2.set_xlabel("Date")
+        ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+        ax2.set_ylabel("Cases")
+        ax2.legend()
+
+        st.pyplot(fig2) # Plot the total number of cases for the selected province
+        
+
+    df_reproduction = createDataFrame.calculateReproductionNumberForDataFrame(df)
+    if selected_province:
+        st.write(f"#### Evolvement of COVID-19 reproduction number for {selected_province}")
+    elif selected_country:
+        st.write(f"#### Evolvement of COVID-19 reproduction number for {selected_country}")
+    elif selected_continent:
+        st.write(f"#### Evolvement of COVID-19 reproduction number for {selected_continent}")
+    else:
+        st.write("### Global evolvement of COVID-19 reproduction number")
+
+    df_population = createDataFrame.dataFrameToCasesPerMillion(df)
+    fig3, ax3 = plt.subplots(figsize=((10,6)))
+    ax3.plot(df_reproduction["Date"], df_reproduction["Reproduction Number"], label="Active Cases", color="blue")
+
+    ax3.set_xlabel("Date")
+    ax3.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax3.set_ylabel(r"$R_0$")
+    ax3.legend()
+    st.pyplot(fig3) # Plot selected country, continent or global for cases per million
 
 # Top US Counties Tab
-with tab5:
+with tab4:
     st.header("Top 5 US Counties with Most Cases and Deaths")
     top_cases = df_usa_counties.groupby(["Admin2", "Province_State"], as_index=False)["Confirmed"].sum()
     top_cases = top_cases.nlargest(5, "Confirmed")
@@ -203,7 +322,7 @@ with tab5:
     st.write(top_deaths)
 
 # Case Fatality Rate Tab
-with tab6:
+with tab5:
     st.header("Case Fatality Rate Analysis")
     st.write("### Case Fatality Rate Over Time")
 

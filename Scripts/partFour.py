@@ -57,22 +57,18 @@ def get_R0_trajectory(country):
     plt.show()
 
 # Fixing Europe Map visualization
-df_europe = df_final[df_final["WHO.Region"] == "Europe"]
-fig = px.choropleth(df_europe, 
-                    locations="Country.Region", 
-                    locationmode="country names",
-                    color="Active_csv",
-                    hover_name="Country.Region",
-                    title="Active COVID-19 Cases in Europe",
-                    color_continuous_scale="Reds")
-fig.show()
+def plot_visualization_map_WHO_Region(continent):
+    df_continent = df_final[df_final["WHO.Region"] == continent]
+    fig = px.choropleth(df_continent, 
+                        locations="Country.Region", 
+                        locationmode="country names",
+                        color="Active_csv",
+                        hover_name="Country.Region",
+                        title=f"Active COVID-19 Cases for {continent}",
+                        color_continuous_scale="Reds")
+    return fig
 
-# Identify top 5 US counties with highest deaths and cases
-df_top_cases = df_usa_counties.groupby("Admin2").agg({"Confirmed": "sum"}).reset_index()
-df_top_cases = df_top_cases.nlargest(5, "Confirmed")
 
-df_top_deaths = df_usa_counties.groupby("Admin2").agg({"Deaths": "sum"}).reset_index()
-df_top_deaths = df_top_deaths.nlargest(5, "Deaths")
 
 # Plot top 5 counties
 def plot_top_us_counties():
@@ -167,7 +163,7 @@ def plot_sird_model():
     plt.grid()
     plt.show()
 
-plot_top_us_counties()
+# plot_top_us_counties()
 
 # SIRD model
 def SIRD_model(t, y, alpha, beta, gamma, mu, N):
@@ -178,32 +174,34 @@ def SIRD_model(t, y, alpha, beta, gamma, mu, N):
     dDdt = mu * I
     return [dSdt, dIdt, dRdt, dDdt]
 
-first_day = df_final[df_final["Date"] == df_final["Date"].min()].iloc[0]
-S0 = first_day["Population"] - first_day["Confirmed_csv"]
-I0 = first_day["Confirmed_csv"]
-R0 = first_day["Recovered_csv"]
-D0 = first_day["Deaths_csv"]
-N = first_day["Population"]
+# first_day = df_final[df_final["Date"] == df_final["Date"].min()].iloc[0]
+# S0 = first_day["Population"] - first_day["Confirmed_csv"]
+# I0 = first_day["Confirmed_csv"]
+# R0 = first_day["Recovered_csv"]
+# D0 = first_day["Deaths_csv"]
+# N = first_day["Population"]
 
-alpha = 0.01
-beta = df_final["beta"].mean()
-gamma = df_final["gamma"].mean()
-mu = df_final["mu"].mean()
+# alpha = 0.01
+# beta = df_final["beta"].mean()
+# gamma = df_final["gamma"].mean()
+# mu = df_final["mu"].mean()
 
-t_span = (0, 180)
-t_eval = np.linspace(t_span[0], t_span[1], 180)
+# t_span = (0, 180)
+# t_eval = np.linspace(t_span[0], t_span[1], 180)
 
-solution = solve_ivp(SIRD_model, t_span, [S0, I0, R0, D0], args=(alpha, beta, gamma, mu, N), t_eval=t_eval)
+# solution = solve_ivp(SIRD_model, t_span, [S0, I0, R0, D0], args=(alpha, beta, gamma, mu, N), t_eval=t_eval)
 
-# Plot SIRD model results
-plt.figure(figsize=(12, 6))
-plt.plot(t_eval, solution.y[0], label="Susceptible (S)", linestyle="--", color="blue")
-plt.plot(t_eval, solution.y[1], label="Infected (I)", linestyle="-", color="red")
-plt.plot(t_eval, solution.y[2], label="Recovered (R)", linestyle=":", color="green")
-plt.plot(t_eval, solution.y[3], label="Deceased (D)", linestyle="-.", color="black")
-plt.xlabel("Days")
-plt.ylabel("Population")
-plt.title("SIRD Model Simulation Over 180 Days")
-plt.legend()
-plt.grid()
-plt.show()
+# # Plot SIRD model results
+# plt.figure(figsize=(12, 6))
+# plt.plot(t_eval, solution.y[0], label="Susceptible (S)", linestyle="--", color="blue")
+# plt.plot(t_eval, solution.y[1], label="Infected (I)", linestyle="-", color="red")
+# plt.plot(t_eval, solution.y[2], label="Recovered (R)", linestyle=":", color="green")
+# plt.plot(t_eval, solution.y[3], label="Deceased (D)", linestyle="-.", color="black")
+# plt.xlabel("Days")
+# plt.ylabel("Population")
+# plt.title("SIRD Model Simulation Over 180 Days")
+# plt.legend()
+# plt.grid()
+# plt.show()
+
+
