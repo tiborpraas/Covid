@@ -1,26 +1,18 @@
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
 import query_database
 import sqlite3
-import plotly.express as px
+from datetime import datetime
 
 def createDataFrameOverTime(continent=None, country=None, province=None, startdate=None, enddate=None):
     connection = sqlite3.connect("Data/covid_database.db")
 
-    complete_df = pd.read_csv("Data/complete.csv", parse_dates=["Date"])
-    complete_df[["Confirmed", "Deaths", "Recovered", "Active"]] = complete_df[["Confirmed", "Deaths", "Recovered", "Active"]].fillna(0)
-    
-    # Keep only 1 row from rows that have the same WHO.Region, Country.Region, Province.State and Date as another
-    complete_df.drop_duplicates(["WHO.Region", "Country.Region", "Province.State", "Date"], inplace=True)
-
-    # Adds the complete.csv as a new table to the sql database with all duplicates
-    complete_df.to_sql("complete_data", connection, if_exists="replace", index=False)
-
     cursor = connection.cursor()
 
+    
     data_startdate, data_enddate = query_database.date_ranges(cursor)
+    startdate = startdate.strftime("%Y-%m-%d")
+    enddate = enddate.strftime("%Y-%m-%d")
 
     if not startdate:
         startdate = data_startdate
@@ -72,9 +64,3 @@ def dataFrameToCasesPerMillion(df):
     df["Total_Active_Cases"] = df["Total_Active_Cases"] * million / df["Population"]
 
     return df
-
-
-
-        
-        
-

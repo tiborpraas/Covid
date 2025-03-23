@@ -36,13 +36,12 @@ def mapping_datasets(cursor):
 
     for country_wise_name, worldometer_name in country_mapping:
         query = """
-        INSERT INTO country_mapping (country_wise_name, worldometer_name)
+        INSERT INTO data_mapping (country_wise_name, worldometer_name)
         VALUES (?, ?);
         """
         cursor.execute(query, (country_wise_name, worldometer_name))
 
     return
-
 
 
 def fetch_country_data(country):
@@ -66,8 +65,7 @@ def fetch_country_data(country):
          mapping_datasets(cursor)
          mapping_list = ()
 
-
-         query = "SELECT [worldometer_name] FROM country_mapping WHERE [country_wise_name] = ?;"
+         query = "SELECT [worldometer_name] FROM data_mapping WHERE [country_wise_name] = ?;"
 
          cursor.execute(query, (country,))
          queryResult = cursor.fetchone()
@@ -75,7 +73,7 @@ def fetch_country_data(country):
             mapping_list = (country, str(queryResult[0]))
 
          if not mapping_list:
-            query = "SELECT [country_wise_name] FROM country_mapping WHERE [worldometer_name] = ?;"
+            query = "SELECT [country_wise_name] FROM data_mapping WHERE [worldometer_name] = ?;"
             cursor.execute(query, (country,))
             queryResult = cursor.fetchone()
             if queryResult:
@@ -88,7 +86,7 @@ def fetch_country_data(country):
             SELECT cw.[Active], cw.[New.cases], cw.[Recovered], cw.[New.recovered], cw.[Deaths], cw.[New.deaths],
             wd.[Population], wd.[ActiveCases], wd.[TotalDeaths], wd.[TotalRecovered]
             FROM country_wise cw
-            JOIN country_mapping cm ON cw.[Country.Region] = cm.country_wise_name
+            JOIN data_mapping cm ON cw.[Country.Region] = cm.country_wise_name
             JOIN worldometer_data wd ON cm.worldometer_name = wd.[Country.Region]
             WHERE cw.[Country.Region] = ?;
             """
@@ -137,7 +135,7 @@ def Country_Population(cursor, country):
 
         query = """
         SELECT [worldometer_name] 
-        FROM country_mapping 
+        FROM data_mapping 
         WHERE [country_wise_name] = ?;
         """
 
@@ -147,7 +145,7 @@ def Country_Population(cursor, country):
             mapping_list = (country, str(queryResult[0]))
 
         if not mapping_list:
-            query = "SELECT [country_wise_name] FROM country_mapping WHERE [worldometer_name] = ?;"
+            query = "SELECT [country_wise_name] FROM data_mapping WHERE [worldometer_name] = ?;"
             cursor.execute(query, (country,))
             queryResult = cursor.fetchone()
             if queryResult:
@@ -272,10 +270,3 @@ def Total_Cases_Per_Day_Province(connection, continent, country, province, start
     df = pd.read_sql(query, connection, params=(continent, country, province, startdate, enddate))
 
     return df
-
-
-
-
-
-
-
